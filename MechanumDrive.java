@@ -164,8 +164,8 @@ public class MechanumDrive extends LinearOpMode {
             }
             
             if (intakeToggle){
-                intakeLeft.setPower(-0.7);
-                intakeRight.setPower(0.7);
+                intakeLeft.setPower(-1);
+                intakeRight.setPower(1);
             } else {
                 intakeLeft.setPower(0);
                 intakeRight.setPower(0);
