@@ -19,6 +19,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -80,7 +82,6 @@ public class MechanumDrive extends LinearOpMode {
         armMotor.setTargetPosition(armPosition);
         armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         
-        
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         
         parameters.mode = BNO055IMU.SensorMode.IMU;
@@ -100,6 +101,7 @@ public class MechanumDrive extends LinearOpMode {
         telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
         telemetry.addData("Status", "Initialized");
         telemetry.update();
+        
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
@@ -107,14 +109,14 @@ public class MechanumDrive extends LinearOpMode {
         while (opModeIsActive()) {
         
             Orientation angles=imu.getAngularOrientation(AxesReference.INTRINSIC,AxesOrder.ZYX, AngleUnit.DEGREES);
-        
-            
             
             double forward = -gamepad1.left_stick_y;
             double right  =  -gamepad1.left_stick_x;
             double clockwise = gamepad1.right_stick_x;
             clockwise *= sensitivity;
             
+        
+            //this part of the code controls the mechanum drive
             double theta = angles.firstAngle * Math.PI/180;
             
             double temp = forward * Math.cos(theta) + right * Math.sin(theta);
@@ -126,6 +128,7 @@ public class MechanumDrive extends LinearOpMode {
             double rearLeftPower = -forward - clockwise + right;
             double rearRightPower = forward - clockwise + right;
             
+            
             double max = Math.abs(frontLeftPower);
             if (Math.abs(frontRightPower) > max) {
                 max=Math.abs(frontRightPower);
@@ -136,6 +139,7 @@ public class MechanumDrive extends LinearOpMode {
             if (Math.abs(rearLeftPower) > max) {
                 max=Math.abs(rearLeftPower);
             } 
+            */
             if(max>1){
                 frontLeftPower /= max;
                 frontRightPower /= max;
@@ -148,14 +152,18 @@ public class MechanumDrive extends LinearOpMode {
             frontLeft.setPower(frontLeftPower);
             frontRight.setPower(frontRightPower);
             
-            if(gamepad2.left_trigger > 0) {
-                armPosition+=10.5;
-                armMotor.setPower(gamepad2.left_trigger);
+            // this part of the code controls the arm.
+            // we subtract the left trigger from the right because
+            // we want to have the right trigger go backwards.
+            // the gamepad.left-gamepad.right_trigger float is being multiplied by 25, 
+            // the power we want the motor to be at full depression. 
+            armPosition+=25*(gamepad2.left_trigger-gamepad2.right_trigger);
+            // we add gamepad.left_trigger to gamepad.right_trigger.
+            armMotor.setPower(gamepad2.left_trigger+gamepad2.right_trigger);
             
-            } else if(gamepad2.right_trigger > 0) {
-                armPosition-=10.5;
-                armMotor.setPower(-gamepad2.right_trigger);
-            } 
+            
+            telemetry.addData("armPosition: ", armPosition);
+            armMotor.setTargetPosition(armPosition);
             
             if (gamepad2.a){
                 intakeToggle = true;
@@ -164,8 +172,8 @@ public class MechanumDrive extends LinearOpMode {
             }
             
             if (intakeToggle){
-                intakeLeft.setPower(-1);
-                intakeRight.setPower(1);
+                intakeLeft.setPower(-1.0);
+                intakeRight.setPower(1.0);
             } else {
                 intakeLeft.setPower(0);
                 intakeRight.setPower(0);
