@@ -57,6 +57,7 @@ public class MechanumDrive extends LinearOpMode {
     private DcMotor armMotor;
     private DcMotor intakeLeft;
     private DcMotor intakeRight;
+    private Servo miniArm;
     private Servo frontServo;
     private Servo backServo;
     private BNO055IMU imu;
@@ -76,6 +77,7 @@ public class MechanumDrive extends LinearOpMode {
         backServo = hardwareMap.get(Servo.class, "backServo");
         intakeLeft = hardwareMap.get(DcMotor.class, "intakeLeft");
         intakeRight = hardwareMap.get(DcMotor.class, "intakeRight");
+        miniArm = hardwareMap.get(Servo.class, "Mini Arm");
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         int armPosition = armMotor.getCurrentPosition();
         
@@ -139,14 +141,13 @@ public class MechanumDrive extends LinearOpMode {
             if (Math.abs(rearLeftPower) > max) {
                 max=Math.abs(rearLeftPower);
             } 
-            */
+            
             if(max>1){
                 frontLeftPower /= max;
                 frontRightPower /= max;
                 rearLeftPower /= max;
                 rearRightPower /= max;
             }
-            
             backLeft.setPower(rearLeftPower);
             backRight.setPower(rearRightPower);
             frontLeft.setPower(frontLeftPower);
@@ -179,12 +180,12 @@ public class MechanumDrive extends LinearOpMode {
                 intakeRight.setPower(0);
             }
             
-            if(gamepad2.left_bumper) {
-                frontServo.setPosition(0.3);
-                backServo.setPosition(0);
-            } else if (gamepad2.right_bumper) {
-                frontServo.setPosition(0);
-                backServo.setPosition(0.3);
+            if(gamepad2.right_bumper) {
+                frontServo.setPosition(.3);
+                backServo.setPosition(.08);
+            } else if (gamepad2.left_bumper) {
+                frontServo.setPosition(.2);
+                backServo.setPosition(.18);
             }
             
             telemetry.addData("Status", "Running");
