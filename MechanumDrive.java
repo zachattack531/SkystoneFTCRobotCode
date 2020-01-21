@@ -2,7 +2,7 @@
 Copyright 2019 FIRST Tech Challenge Team 14853
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
+associated documentation files (the "Software"), to deal in the Software without restriction,http://192.168.49.1:8080/java/editor.html?/src/org/firstinspires/ftc/teamcode/MechanumDrive.java
 including without limitation the rights to use, copy, modify, merge, publish, distribute,
 sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
@@ -57,13 +57,14 @@ public class MechanumDrive extends LinearOpMode {
     private DcMotor armMotor;
     private DcMotor intakeLeft;
     private DcMotor intakeRight;
+    private Servo miniArm;
     private Servo frontServo;
     private Servo backServo;
     private BNO055IMU imu;
 
     private final double sensitivity = 1;
     
-    private boolean intakeToggle;
+    private double intakePower;
 
     @Override
     public void runOpMode() {
@@ -76,6 +77,7 @@ public class MechanumDrive extends LinearOpMode {
         backServo = hardwareMap.get(Servo.class, "backServo");
         intakeLeft = hardwareMap.get(DcMotor.class, "intakeLeft");
         intakeRight = hardwareMap.get(DcMotor.class, "intakeRight");
+        miniArm = hardwareMap.get(Servo.class, "Mini Arm");
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         int armPosition = armMotor.getCurrentPosition();
         
@@ -118,16 +120,28 @@ public class MechanumDrive extends LinearOpMode {
         
             //this part of the code controls the mechanum drive
             double theta = angles.firstAngle * Math.PI/180;
+            telemetry.addData("Theta", theta);
+            telemetry.addData("Sine of Theta", Math.sin(theta));
+            telemetry.addData("Cosine of Theta", Math.cos(theta));
+            //double theta = 0;
+            
+            
             
             double temp = forward * Math.cos(theta) + right * Math.sin(theta);
             right = forward * Math.sin(theta) - right * Math.cos(theta);
             forward = temp;
+            //right -= .005;
             
             double frontLeftPower = -forward - clockwise - right;
             double frontRightPower = forward - clockwise - right;
             double rearLeftPower = -forward - clockwise + right;
             double rearRightPower = forward - clockwise + right;
             
+            
+            
+
+            telemetry.addData("Left Stick X", gamepad1.left_stick_x);
+            telemetry.addData("Left Stick Y", gamepad1.left_stick_y);
             
             double max = Math.abs(frontLeftPower);
             if (Math.abs(frontRightPower) > max) {
@@ -139,14 +153,13 @@ public class MechanumDrive extends LinearOpMode {
             if (Math.abs(rearLeftPower) > max) {
                 max=Math.abs(rearLeftPower);
             } 
-            */
+            
             if(max>1){
                 frontLeftPower /= max;
                 frontRightPower /= max;
                 rearLeftPower /= max;
                 rearRightPower /= max;
             }
-            
             backLeft.setPower(rearLeftPower);
             backRight.setPower(rearRightPower);
             frontLeft.setPower(frontLeftPower);
@@ -165,26 +178,28 @@ public class MechanumDrive extends LinearOpMode {
             telemetry.addData("armPosition: ", armPosition);
             armMotor.setTargetPosition(armPosition);
             
-            if (gamepad2.a){
-                intakeToggle = true;
-            } else if (gamepad2.b){
-                intakeToggle = false;
-            }
+            // This is a ternary operator, which is 
+            // a statment true/false input that returns
+            // a value based on the true/false input.
+            // In this case, if you hit a, we return
+            // 1. If not, if b is pressed return -1,
+            // otherwise, return 0.
+            intakePower = gamepad2.a ? 1.0 : gamepad2.b ? -1.0 : 0.0;
+    
+            intakeLeft.setPower(-intakePower);
+            intakeRight.setPower(intakePower);
             
-            if (intakeToggle){
-                intakeLeft.setPower(-1.0);
-                intakeRight.setPower(1.0);
-            } else {
-                intakeLeft.setPower(0);
-                intakeRight.setPower(0);
+            if (gamepad2.x){
+                miniArm.setPosition(0.7);
+            } else if (gamepad2.y){
+                miniArm.setPosition(0.1);
             }
-            
-            if(gamepad2.left_bumper) {
-                frontServo.setPosition(0.3);
-                backServo.setPosition(0);
-            } else if (gamepad2.right_bumper) {
-                frontServo.setPosition(0);
-                backServo.setPosition(0.3);
+            if(gamepad2.right_bumper) {
+                frontServo.setPosition(.3);
+                backServo.setPosition(.05);
+            } else if (gamepad2.left_bumper) {
+                frontServo.setPosition(.2);
+                backServo.setPosition(.15);
             }
             
             telemetry.addData("Status", "Running");
