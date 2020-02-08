@@ -19,6 +19,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import java.util.Comparator;
 import java.util.stream.Stream;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -60,8 +61,10 @@ public class MechanumDrive extends LinearOpMode {
     private Servo miniArm;
     private Servo frontServo;
     private Servo backServo;
+    private CRServo armServo;
     private BNO055IMU imu;
-
+    private ElapsedTime runtime = new ElapsedTime();
+        
     private final double sensitivity = 1;
     
     private double intakePower;
@@ -78,7 +81,9 @@ public class MechanumDrive extends LinearOpMode {
         intakeLeft = hardwareMap.get(DcMotor.class, "intakeLeft");
         intakeRight = hardwareMap.get(DcMotor.class, "intakeRight");
         miniArm = hardwareMap.get(Servo.class, "Mini Arm");
+        armServo = hardwareMap.get(CRServo.class, "armServo");
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        int movingArm = 0;
         int armPosition = armMotor.getCurrentPosition();
         
         armMotor.setTargetPosition(armPosition);
@@ -119,20 +124,26 @@ public class MechanumDrive extends LinearOpMode {
             
         
             //this part of the code controls the mechanum drive
-            //double theta = angles.firstAngle * Math.PI/180;
-            double theta = 0;
+            double theta = angles.firstAngle * Math.PI/180;
+            //double theta = 0;
+            
             
             
             double temp = forward * Math.cos(theta) + right * Math.sin(theta);
             right = forward * Math.sin(theta) - right * Math.cos(theta);
             forward = temp;
-            right = -right;
+            //right -= .005;
             
             double frontLeftPower = -forward - clockwise - right;
             double frontRightPower = forward - clockwise - right;
             double rearLeftPower = -forward - clockwise + right;
             double rearRightPower = forward - clockwise + right;
             
+            
+            
+
+            telemetry.addData("Left Stick X", gamepad1.left_stick_x);
+            telemetry.addData("Left Stick Y", gamepad1.left_stick_y);
             
             double max = Math.abs(frontLeftPower);
             if (Math.abs(frontRightPower) > max) {
@@ -160,10 +171,12 @@ public class MechanumDrive extends LinearOpMode {
             // we subtract the left trigger from the right because
             // we want to have the right trigger go backwards.
             // the gamepad.left-gamepad.right_trigger float is being multiplied by 25, 
-            // the power we want the motor to be at full depression. 
+            // the power we want the motor to be at full depression.
+            
+            
             armPosition+=25*(gamepad2.left_trigger-gamepad2.right_trigger);
             // we add gamepad.left_trigger to gamepad.right_trigger.
-            armMotor.setPower(gamepad2.left_trigger+gamepad2.right_trigger);
+            armMotor.setPower(.25);
             
             
             telemetry.addData("armPosition: ", armPosition);
@@ -175,25 +188,50 @@ public class MechanumDrive extends LinearOpMode {
             // In this case, if you hit a, we return
             // 1. If not, if b is pressed return -1,
             // otherwise, return 0.
-            intakePower = gamepad2.a ? 1.0 : gamepad2.b ? -1.0 : 0.0;
+            intakePower = gamepad2.a ? 0.75 : gamepad2.b ? -0.75 : 0.0;
     
             intakeLeft.setPower(-intakePower);
             intakeRight.setPower(intakePower);
             
+            int moving = 0;
             if (gamepad2.x){
-                miniArm.setPosition(0.7);
+                miniArm.setPosition(1);
             } else if (gamepad2.y){
-                miniArm.setPosition(0.1);
+                miniArm.setPosition(0.4);
             }
             if(gamepad2.right_bumper) {
-                frontServo.setPosition(.3);
-                backServo.setPosition(.05);
-            } else if (gamepad2.left_bumper) {
                 frontServo.setPosition(.2);
                 backServo.setPosition(.15);
+            }else if (gamepad2.left_bumper) {
+                frontServo.setPosition(.05);
+                backServo.setPosition(.3);
+            }
+            if(gamepad2.dpad_up) {
+                armServo.setPower(1);
+            }else if(gamepad2.dpad_down) {
+                armServo.setPower(-1);
+            }else if(gamepad2.dpad_left){
+                if(movingArm != -1){
+                    runtime.reset();
+                    movingArm = -1;
+                }            
+                
+            } else if(gamepad2.dpad_right) {
+                if(movingArm != 1){
+                    runtime.reset();
+                    movingArm = 1;
+                }
+            } else {
+                if ( runtime.seconds() > 0.5){
+                    movingArm = 0;
+                }
             }
             
+            armServo.setPower(movingArm);
+            
+            
             telemetry.addData("Status", "Running");
+            
             telemetry.addData("angle", angles.firstAngle);
             telemetry.update();
     
